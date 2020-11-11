@@ -597,7 +597,7 @@ UUID shardCollection(OperationContext* opCtx,
                                                               getNumShards(opCtx),
                                                               targetState->collectionIsEmpty);
         initialChunks = splitPolicy->createFirstChunks(
-            opCtx, targetState->shardKeyPattern, {nss, dbPrimaryShardId});
+            opCtx, targetState->shardKeyPattern, {nss, targetState->uuid, dbPrimaryShardId});
 
         logStartShardCollection(opCtx, cmdObj, nss, request, *targetState, dbPrimaryShardId);
 

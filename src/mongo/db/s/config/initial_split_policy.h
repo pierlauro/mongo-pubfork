@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "mongo/bson/bsonobj.h"
+#include "mongo/db/catalog/collection_options.h"
 #include "mongo/db/namespace_string.h"
 #include "mongo/s/catalog/type_chunk.h"
 #include "mongo/s/catalog/type_tags.h"
@@ -44,6 +45,7 @@ namespace mongo {
 
 struct SplitPolicyParams {
     NamespaceString nss;
+    CollectionUUID collectionUUID;
     ShardId primaryShardId;
 };
 
@@ -101,6 +103,7 @@ public:
      */
     static ShardCollectionConfig generateShardCollectionInitialChunks(
         const NamespaceString& nss,
+        const CollectionUUID& collectionUUID,
         const ShardKeyPattern& shardKeyPattern,
         const ShardId& databasePrimaryShardId,
         const Timestamp& validAfter,
