@@ -49,6 +49,7 @@ const std::string ChunkType::ShardNSPrefix = "config.cache.chunks.";
 const BSONField<OID> ChunkType::name("_id");
 const BSONField<BSONObj> ChunkType::minShardID("_id");
 const BSONField<std::string> ChunkType::ns("ns");
+const BSONField<std::string> ChunkType::collectionUUID("collectionUUID");
 const BSONField<BSONObj> ChunkType::min("min");
 const BSONField<BSONObj> ChunkType::max("max");
 const BSONField<std::string> ChunkType::shard("shard");
@@ -211,6 +212,18 @@ ChunkType::ChunkType(NamespaceString nss, ChunkRange range, ChunkVersion version
       _version(version),
       _shard(std::move(shardId)) {}
 
+ChunkType::ChunkType(NamespaceString nss,
+                     CollectionUUID collectionUUID,
+                     ChunkRange range,
+                     ChunkVersion version,
+                     ShardId shardId)
+    : _nss(nss),
+      _collectionUUID(collectionUUID),
+      _min(range.getMin()),
+      _max(range.getMax()),
+      _version(version),
+      _shard(std::move(shardId)) {}
+
 StatusWith<ChunkType> ChunkType::parseFromConfigBSONCommand(const BSONObj& source) {
     ChunkType chunk;
 
@@ -233,6 +246,19 @@ StatusWith<ChunkType> ChunkType::parseFromConfigBSONCommand(const BSONObj& sourc
         if (!status.isOK())
             return status;
         chunk._nss = NamespaceString(chunkNS);
+    }
+
+    {
+        std::string collectionUUIDString;
+        Status status =
+            bsonExtractStringField(source, collectionUUID.name(), &collectionUUIDString);
+        if (status.isOK()) {
+            auto swUUID = CollectionUUID::parse(collectionUUIDString);
+            if (!swUUID.isOK()) {
+                return swUUID.getStatus();
+            }
+            chunk._collectionUUID = std::move(swUUID.getValue());
+        }
     }
 
     {
@@ -321,6 +347,8 @@ BSONObj ChunkType::toConfigBSON() const {
         builder.append(name.name(), getName());
     if (_nss)
         builder.append(ns.name(), getNS().ns());
+    if (_collectionUUID)
+        builder.append(collectionUUID.name(), getCollectionUUID().toString());
     if (_min)
         builder.append(min.name(), getMin());
     if (_max)
@@ -424,6 +452,10 @@ void ChunkType::setName(const OID& id) {
 void ChunkType::setNS(const NamespaceString& nss) {
     invariant(nss.isValid());
     _nss = nss;
+}
+
+void ChunkType::setCollectionUUID(const CollectionUUID& uuid) {
+    _collectionUUID = uuid;
 }
 
 void ChunkType::setMin(const BSONObj& min) {
